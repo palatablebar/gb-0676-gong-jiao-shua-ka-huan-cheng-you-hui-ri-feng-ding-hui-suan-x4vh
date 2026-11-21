@@ -19,11 +19,14 @@ docker compose exec -T app pytest -q
 - 4. 行程配对：`/journeys`，`/api/journeys`。
 - 5. 优惠回算：`/discounts`，`/api/discounts`。
 - 6. 清分对账：`/clearing`，`/api/clearing`。
-- 7. 日结归档：`/settlement`，`/api/settlement`。
+- 7. 企业裁决：`/adjudication`，`/api/adjudication`。
+- 8. 日结归档：`/settlement`，`/api/settlement`。
 
 ## 核心规则
 
 换乘按上次有效付费行程的时间窗计算，优惠与日封顶按确定顺序裁决并保留分币守恒。
+
+跨企业换乘优惠裁决（裁字2026-11）：由产生资格的前序企业承担。前序有效付费行程在换乘窗内产生优惠资格，资格产生方为该笔换乘唯一责任企业；接乘企业后程减收由前序企业按笔等额补偿，补偿金额等于后程实际优惠额。同一换乘批次重试不重复补偿；运营归属切换失败保留旧版；企业间账目核清前日结暂缓封存；原始刷卡与归属依据全程保留。
 
 ## 演示
 
@@ -36,7 +39,7 @@ docker compose exec -T app pytest -q
 
 输入列见 `docs/DATA-DICTIONARY.md`。项目包含dirty.csv、clean.csv、legacy.csv，统一走实际导入路径。上传限制4MB，拒绝不带时区的时间。业务键按字符串保留，Decimal参与计算，空值不会当零。
 
-`POST /api/runs` 接收sample或csv；`GET /api/runs`返回历史批次；`POST /api/runs/<id>/review`需要version与decision；`GET /api/runs/<id>/archive`返回唯一证据导出。
+`POST /api/runs` 接收sample或csv；`GET /api/runs`返回历史批次；`POST /api/runs/<id>/review`需要version与decision；`POST /api/runs/<id>/reconcile`确认企业间账目核清；`GET /api/runs/<id>/compensations`返回该批次补偿台账；`GET /api/runs/<id>/archive`返回唯一证据导出。`parameters.attribution_switch`可提交运营归属切换，整批校验，任一失败则全部保留旧版。
 
 ## 范围
 

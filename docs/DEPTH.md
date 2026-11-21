@@ -12,7 +12,8 @@
 | M4 行程配对 | 查看并运行行程配对 | `/api/journeys` | `app/modules/m4_journeys/rules.py` | `tests/test_m4.py` |
 | M5 优惠回算 | 查看并运行优惠回算 | `/api/discounts` | `app/modules/m5_discounts/rules.py` | `tests/test_m5.py` |
 | M6 清分对账 | 查看并运行清分对账 | `/api/clearing` | `app/modules/m6_clearing/rules.py` | `tests/test_m6.py` |
-| M7 日结归档 | 查看并运行日结归档 | `/api/settlement` | `app/modules/m7_settlement/rules.py` | `tests/test_m7.py` |
+| M7 企业裁决 | 查看并运行企业裁决 | `/api/adjudication` | `app/modules/m7_adjudication/rules.py` | `tests/test_m7.py` |
+| M8 日结归档 | 查看并运行日结归档 | `/api/settlement` | `app/modules/m8_settlement/rules.py` | `tests/test_m8.py` |
 
 ## 陷阱登记
 
@@ -31,10 +32,16 @@
 | TRAP-11 | 混合偏移 | 落错版本 | UTC归整 | `app/values.py` | `tests/test_m3.py::test_timezone_equal` |
 | TRAP-23 | 换乘截止点 | 重复优惠 | 截止点排除 | `app/modules/m5_discounts/rules.py` | `tests/test_m5.py::test_exact_window_excluded` |
 | TRAP-25 | 票价重叠 | 随意取版 | 冲突隔离 | `app/modules/m3_fares/rules.py` | `tests/test_m3.py::test_overlap_rejected` |
+| TRAP-31 | 换乘批次重试 | 补偿重复入账 | 台账键唯一+批次幂等 | `app/store.py` | `tests/test_m7.py::test_retry_no_duplicate_compensation` |
+| TRAP-32 | 归属切换半截 | 新旧归属混用 | 整批校验失败保留旧版 | `app/modules/m7_adjudication/rules.py` | `tests/test_m7.py::test_switch_batch_atomic` |
+| TRAP-33 | 企业账未核清 | 日结提前封存 | 核清前ready=False暂缓 | `app/modules/m8_settlement/rules.py` | `tests/test_m8.py::test_unreconciled_defers_seal` |
+| TRAP-34 | 裁决丢来源 | 前后程依据丢失 | 双腿_sources与归属版本随行 | `app/modules/m7_adjudication/rules.py` | `tests/test_m7.py::test_sources_and_basis_preserved` |
 
 ## 对账规则
 
 输入原始逻辑行=最终采纳来源行+隔离来源行+重复行+空白行+分段表头。派生记录用_sources保存完整来源，因此分组不丢行。业务预期合计与上游申报合计之差等于逐行差异之和。结果按输入摘要、规则版本及参数产生唯一批次，事务写入；同源重跑只复用已有批次。
+
+跨企业换乘：责任企业唯一（资格产生的前序企业），补偿金额=后程实际优惠额；补偿台账以（批次，换乘键）为主键，重试同批次不重复入账；应付补偿合计=应收补偿合计=跨企业减收合计，否则企业账未核清，日结暂缓封存。
 
 ## 已知不覆盖
 
